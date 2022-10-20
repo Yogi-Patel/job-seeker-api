@@ -27,7 +27,14 @@ app.use(cors()); // This is the express middleware
 app.use(bodyParser.json()); // Parse the request for application/json
 
 
+// Helper functions 
 
+const getUserId = (username) => {
+    return database('users').where('username', username).select('id').then(data => { return data})
+}
+
+
+// Endpoints
 app.post("/register", (req,res) => {
     /*
     Endpoint to register a new user to the service
@@ -135,7 +142,7 @@ app.post("/signin", (req,res) => {
 })
 
 
-app.post("/add", (req,res) => {
+app.post("/add", async (req,res) => {
     /*
     Endpoint to add a new job into the jobs database
 
@@ -155,64 +162,73 @@ app.post("/add", (req,res) => {
     {
         username: <username>,
         success: true,
-        detail: <detail>
+        detail: <detail>,
+        job: {
+            "title": <title>,
+            "company": <company>,
+            "notes": <notes>,
+            "link": <link>
+        }
     }
 
     If adding the job was unsuccessful, the endpoint returns the following response with a status code of 400 (Bad Request):
     {
         username: <username>,
         success: false,
-        detail: <detail>
+        detail: <detail>,
+        job: {
+            "title": <title>,
+            "company": <company>,
+            "notes": <notes>,
+            "link": <link>
+        }
     }
     */
 
     const {username, signedIn, job} = req.body;
-    console.log(req.body)
-    if(signedIn === true)
+    const user_id = await getUserId(username); // returns an array with objects that match the criteria
+    if(signedIn === true )
     {
-        database('users').where('username', username)
-        .then(data => {
-            /* database('job').insert */
-            const date = new Date();
-            const stringDate = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
-            if (data.length !== 1)
-            {
+        const date = new Date();
+        const stringDate = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+        if (user_id.length !== 1)
+        {
+            res.status(400).json({
+                username: username,
+                success: false,
+                detail: `User: ${username} does not exist`
+            })
+        }
+        else
+        {
+            database('job').insert({
+                title: job.title,
+                company: job.company,
+                notes: job.notes,
+                link: job.link,
+                date_created: stringDate,
+                last_modified: stringDate,
+                active: true,
+                user_id: user_id[0].id
+            }).then(response => {
+                res.status(201).json({
+                    username: username, 
+                    success: true,
+                    detail: "Job created",
+                    job: job
+                })
+            })
+            .catch(err => {
                 res.status(400).json({
-                    username: username,
-                    success: false,
-                    detail: `User: ${username} does not exist`
+                    username: username, 
+                    success: false, 
+                    detail: err.detail, 
+                    job: job
                 })
-            }
-            else
-            {
-                database('job').insert({
-                    title: job.title,
-                    company: job.company,
-                    notes: job.notes,
-                    link: job.link,
-                    date_created: stringDate,
-                    last_modified: stringDate,
-                    active: true,
-                    user_id: data[0].id
-                }).then(response => {
-                    res.status(201).json({
-                        username: username, 
-                        success: true,
-                        detail: "Job created",
-                        job: job
-                    })
-                })
-                .catch(err => {
-                    res.status(400).json({
-                        username: username, 
-                        success: false, 
-                        detail: err.detail, 
-                        job: job
-                    })
-                });
-            }
+            });
+        }
 
-        })
+        
     }
     else
     {
@@ -228,8 +244,67 @@ app.post("/add", (req,res) => {
 })
 
 
+app.put("/update", async (req,res) => {
+    /* 
+    Endpoint to update an already existing job in the database
 
+    Client sends a PUT request with the following body:
+    {
+        "username": <username>,
+        "signedIn": true,
+        "job_id": <id>, 
+        "updated_information": <job>
+    }
 
+    If adding the job was successful, the endpoint returns the following response with a status code of 200 (OK):
+    {
+        username: <username>,
+        success: true,
+        detail: <detail>, 
+        job: {
+            "title": <title>,
+            "company": <company>,
+            "notes": <notes>,
+            "link": <link>
+        }
+    }
+
+    If adding the job was unsuccessful, the endpoint returns the following response with a status code of 400 (Bad Request):
+    {
+        username: <username>,
+        success: false,
+        detail: <detail>,
+        job: {
+            "title": <title>,
+            "company": <company>,
+            "notes": <notes>,
+            "link": <link>
+        }
+    }
+
+    */
+    //const {username, signedIn, job_id, updated_information} = req.body;
+    const user_id = await getUserId(req.body.username)
+    console.log(user_id)
+    res.json(user_id)
+    /* if(signedIn === true)
+    {
+        database('job').where('id', job_id)
+        .then(data => {
+            if(data.length === 1) 
+            {
+
+            }
+            else
+            {
+                
+            }
+        })
+    }
+    res.json(req.body); */
+})
+
+//app.post("/search")
 
 app.listen(3000, () => {
     console.log("App is running! ")
