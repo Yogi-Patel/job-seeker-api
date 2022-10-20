@@ -3,6 +3,7 @@ const cors = require("cors");
 const bodyParser = require('body-parser');
 const knex = require('knex');
 const bcrypt = require('bcrypt');
+const { json } = require("body-parser");
 
 const database = knex({
     client: 'pg',
@@ -31,6 +32,11 @@ app.use(bodyParser.json()); // Parse the request for application/json
 
 const getUserId = (username) => {
     return database('users').where('username', username).select('id').then(data => { return data})
+}
+
+const getCurrentDate = () => {
+    const date = new Date();
+    return `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
 }
 
 
@@ -189,8 +195,7 @@ app.post("/add", async (req,res) => {
     const user_id = await getUserId(username); // returns an array with objects that match the criteria
     if(signedIn === true )
     {
-        const date = new Date();
-        const stringDate = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+        const stringDate = getCurrentDate()
         if (user_id.length !== 1)
         {
             res.status(400).json({
@@ -283,10 +288,46 @@ app.put("/update", async (req,res) => {
     }
 
     */
-    //const {username, signedIn, job_id, updated_information} = req.body;
-    const user_id = await getUserId(req.body.username)
-    console.log(user_id)
-    res.json(user_id)
+    const {username, signedIn, job_id, updated_information} = req.body;
+    const user_id = await getUserId(username)
+    const response = {
+        username: username,
+        success: false,
+        detail: "placeholder string",
+        job: updated_information
+    }
+
+    if(signedIn)
+    {
+        database('job').where({id: job_id, user_id: user_id[0].id})
+        .then(data => {
+            if(data.length !== 1)
+            {
+                response.detail = "Job does not exist or access is denied"
+                res.status(400).json(response)
+            }
+            else 
+            {
+                
+                updated_information.active = true
+                updated_information.last_modified = getCurrentDate()
+                
+                database('job').where({id: job_id, user_id: user_id[0].id})
+                .update(updated_information).then();  // Added .then() to make sure that the promise is fulfilled
+                
+                response.success = true
+                response.job = updated_information
+                res.status(200).json(response)
+            }
+
+        })
+    }
+    else
+    {
+        response.detail = "You are not signed in"
+        res.status(400).json(response)
+    }
+    
     /* if(signedIn === true)
     {
         database('job').where('id', job_id)
