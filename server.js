@@ -32,7 +32,7 @@ app.use(bodyParser.json()); // Parse the request for application/json
 
 const getUserId = (username) => {
     return database('users').where('username', username).select('id').then(data => { return data})
-}
+} // Returns an array of Object(s)
 
 const getCurrentDate = () => {
     const date = new Date();
@@ -328,23 +328,75 @@ app.put("/update", async (req,res) => {
         res.status(400).json(response)
     }
     
-    /* if(signedIn === true)
-    {
-        database('job').where('id', job_id)
-        .then(data => {
-            if(data.length === 1) 
-            {
-
-            }
-            else
-            {
-                
-            }
-        })
-    }
-    res.json(req.body); */
 })
 
+
+app.delete("/delete", async (req, res) => {
+    /* 
+    Endpoint to delete a job in the database
+
+    Client sends a PUT request with the following body:
+    {
+        "username": <username>,
+        "signedIn": true,
+        "job_id": <id>, 
+    }
+
+    If adding the job was successful, the endpoint returns the following response with a status code of 200 (OK):
+    {
+        username: <username>,
+        success: true,
+        detail: <detail> 
+        }
+    }
+
+    If adding the job was unsuccessful, the endpoint returns the following response with a status code of 400 (Bad Request):
+    {
+        username: <username>,
+        success: false,
+        detail: <detail>
+    }
+    */
+   const { username, signedIn, job_id } = req.body;
+
+   const user_id = await getUserId(username)
+
+   const response = {
+        username: username,
+        sucess: false,
+        detail: "placeholder string"
+   }
+   if(signedIn)
+    {
+        database('job').where({id: job_id , user_id: user_id[0].id })
+        .then(data => {
+            if(data.length !== 1)
+            {
+                
+                response.detail = "Job does not exist or access is denied"
+                res.status(400).json(response)
+            }
+            else 
+            {
+                database('job').where({id: job_id, user_id: user_id[0].id})
+                .del().then();  // Added .then() to make sure that the promise is fulfilled
+                
+                response.success = true
+                response.detail = `Job with id: ${job_id} deleted`
+                res.status(200).json(response)
+            }
+
+        })
+
+    }
+    else
+    {
+        response.detail = "You are not signed in"
+        res.status(400).json(response)
+    }
+
+   
+})
 //app.post("/search")
 
 app.listen(3000, () => {
