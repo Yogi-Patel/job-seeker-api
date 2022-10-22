@@ -461,7 +461,7 @@ app.get("/jobs", async (req, res) => {
         }
 
 
-        database('job').where(whereQuery)
+        database('job').orderBy('last_modified', 'desc').where(whereQuery)
             .then(data => {
                 response.success = true 
                 response.result = data
