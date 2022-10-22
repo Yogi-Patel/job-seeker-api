@@ -214,7 +214,8 @@ app.post("/add", async (req,res) => {
                 date_created: stringDate,
                 last_modified: stringDate,
                 active: true,
-                user_id: user_id[0].id
+                user_id: user_id[0].id,
+                category: job.category.toLowerCase()
             }).then(response => {
                 res.status(201).json({
                     username: username, 
@@ -289,11 +290,14 @@ app.put("/update", async (req,res) => {
 
     */
     const {username, signedIn, job_id, updated_information} = req.body;
+    if ('category' in updated_information)
+    {
+        updated_information.category = updated_information.category.toLowerCase()
+    }
     const user_id = await getUserId(username)
     const response = {
         username: username,
         success: false,
-        detail: "placeholder string",
         job: updated_information
     }
 
@@ -397,7 +401,164 @@ app.delete("/delete", async (req, res) => {
 
    
 })
-//app.post("/search")
+
+
+app.get("/jobs", async (req, res) => {
+    /*
+    Endpoint that provides all the jobs that are under a given category
+
+    The client sends the following request: 
+    {
+        "username": <username>,
+        "signedIn": <signedIn>, 
+        "filter": <one of the following terms: "all", "applied", "wishlist", "interview", "offer", "rejected", "inactive" > 
+    }
+
+    The endpoint sends the following response with a 200 status code for a successful request:
+    {
+        username: <username>,
+        "success": true,
+        result: <array with all the jobs that match the filter>
+    }
+
+    The endpoint sends the followign response with a 400 status code for a bad request:
+    {
+        username: <username>,
+        "success": false, 
+        detail: <details>
+    }
+    */
+
+    const { username, signedIn, filter }  = req.body;
+    
+    const user_id = await getUserId(username)
+    
+    const response = {
+        username: username,
+        success: false,
+    }
+
+    if (user_id.length === 0 )
+    {
+        response.detail = `User: ${username} does not exist`
+        res.status(400).json(response)
+    }
+
+    if(signedIn)
+    {
+        let whereQuery = {}
+        if(filter.toLowerCase() === "all")
+        {
+            whereQuery = {active: true, user_id: user_id[0].id }
+        }
+        else if (filter.toLowerCase() === "inactive")
+        {
+            whereQuery = {active: false, user_id: user_id[0].id }
+        }
+        else
+        {
+            whereQuery = {active: true, user_id: user_id[0].id, category: filter.toLowerCase() }
+        }
+
+
+        database('job').where(whereQuery)
+            .then(data => {
+                response.success = true 
+                response.result = data
+
+                res.status(200).json(response)
+            })
+        
+
+    }
+    else 
+    {
+        response.detail = "You are not signed in"
+        res.status(400).json(response)
+    }
+
+})
+
+app.get("/refresh", async (req, res) => {
+    /* 
+    Endpoint that refreshes (checks for activity of jobs) i.e., it checks the jobs for activity and if they have not been active for the last 2 months,
+    they are moved to the inactive state
+
+    the client sends the following along with the request: 
+    {
+        "username": <username>,
+        "signedIn": true
+    }
+
+    The endpoint sends the following with a status code of 200 if the request was successful:
+    {
+        username: "username",
+        success: true
+    }
+
+    The endpoint sends the following with a status code of 400 if the request failed: 
+    {
+        username: "username",
+        success: false,
+        detail: <details>
+    }
+    */
+
+    
+    const { username, signedIn } = req.body
+
+    const user_id = await getUserId(username)
+
+    /* const date1 = new Date('7/13/2010');
+    const date2 = new Date('12/15/2010');
+    const diffTime = Math.abs(date2 - date1);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    console.log(diffTime + " milliseconds");
+    console.log(diffDays + " days"); */
+
+
+    const response = {
+        username: username,
+        suceess: false
+    }
+    if (user_id.length !== 1)
+    {
+        response.detail = `User: ${username} does not exist`
+        res.status(400).json(response)
+
+    }
+    
+    if(signedIn)
+    {
+        const today = new Date();
+        database('job').where('user_id', user_id[0].id)
+        .then(data => {
+            for(let i = 0; i<data.length; i++)
+            {
+                const lastModified = new Date(data[i].last_modified);
+                const diffTime = Math.abs(today - lastModified);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if(diffDays > 90)
+                {
+                    data[i].active = false
+                    
+                    database('job').where({id: data[i].id, user_id: user_id[0].id})
+                    .update(data[i]).then();
+                }
+            }
+            response.suceess = true
+            res.status(200).json(response)
+        })
+
+    }
+    else
+    {
+        response.detail = 'You are not signed in'
+        res.status(400).json(response)
+    }
+
+})
 
 app.listen(3000, () => {
     console.log("App is running! ")
