@@ -41,6 +41,11 @@ const getCurrentDate = () => {
 
 
 // Endpoints
+app.get("/", (req,res) =>{
+    res.status(200).json("The API is working!")
+})
+
+
 app.post("/register", (req,res) => {
     /*
     Endpoint to register a new user to the service
