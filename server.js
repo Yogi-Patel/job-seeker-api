@@ -42,7 +42,32 @@ const getCurrentDate = () => {
 
 // Endpoints
 app.get("/", (req,res) =>{
-    res.status(200).json("The API is working!")
+    
+    if(req.query.hasOwnProperty('number'))
+    {
+        let response = {}
+        for(let i = 0; i < req.query.number; i++)
+        {
+            response[i] = {
+                "id": i+1,
+                "title": "test",
+                "company": "test",
+                "notes": "test",
+                "link": "test",
+                "date_created": "2022-10-24T07:00:00.000Z",
+                "last_modified": "2022-10-24T07:00:00.000Z",
+                "active": false,
+                "user_id": 0,
+                "category": "test"
+            }
+        }
+        res.status(200).json(response)
+    }
+    else
+    {
+        res.status(200).json("The API is working!")
+    }
+    
 })
 
 
@@ -408,7 +433,7 @@ app.delete("/delete", async (req, res) => {
 })
 
 
-app.get("/jobs", async (req, res) => {
+app.post("/jobs", async (req, res) => {
     /*
     Endpoint that provides all the jobs that are under a given category
 
@@ -484,7 +509,7 @@ app.get("/jobs", async (req, res) => {
 
 })
 
-app.get("/refresh", async (req, res) => {
+app.post("/refresh", async (req, res) => {
     /* 
     Endpoint that refreshes (checks for activity of jobs) i.e., it checks the jobs for activity and if they have not been active for the last 2 months,
     they are moved to the inactive state
@@ -522,6 +547,7 @@ app.get("/refresh", async (req, res) => {
     console.log(diffDays + " days"); */
 
 
+    
     const response = {
         username: username,
         suceess: false
