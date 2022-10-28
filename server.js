@@ -648,6 +648,8 @@ app.post("/stats", async (req, res) => {
         await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "offer"}).then(data => {response.counts.offer = data[0].count })
         await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "rejected"}).then(data => {response.counts.rejected = data[0].count })
         await database('job').count("*").where({'user_id': user_id[0].id, active: false}).then(data => {response.counts.inactive = data[0].count })
+
+        response.success = true
         res.status(200).json(response)
 
         
