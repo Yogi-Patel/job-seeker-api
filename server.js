@@ -344,9 +344,7 @@ app.put("/update", async (req,res) => {
             {
                 
                 updated_information.active = true
-                updated_information.last_modified = getCurrentDate()
-                
-                console.log(updated_information)
+                updated_information.last_modified = getCurrentDate()            
                 database('job').where({id: job_id, user_id: user_id[0].id})
                 .update(updated_information).then();  // Added .then() to make sure that the promise is fulfilled
                 
@@ -354,7 +352,6 @@ app.put("/update", async (req,res) => {
                 response.job = updated_information
                 res.status(200).json(response)
             }
-
         })
     }
     else
