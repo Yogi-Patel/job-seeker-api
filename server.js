@@ -346,6 +346,7 @@ app.put("/update", async (req,res) => {
                 updated_information.active = true
                 updated_information.last_modified = getCurrentDate()
                 
+                console.log(updated_information)
                 database('job').where({id: job_id, user_id: user_id[0].id})
                 .update(updated_information).then();  // Added .then() to make sure that the promise is fulfilled
                 
@@ -369,7 +370,7 @@ app.delete("/delete", async (req, res) => {
     /* 
     Endpoint to delete a job in the database
 
-    Client sends a PUT request with the following body:
+    Client sends a delete request with the following body:
     {
         "username": <username>,
         "signedIn": true,
