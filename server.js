@@ -589,6 +589,75 @@ app.post("/refresh", async (req, res) => {
 
 })
 
+
+app.post("/stats", async (req, res) => {
+    /*
+        This endpoint sends the number of jobs in each catergory for a user
+        
+        The client sends a POST request with the following body: 
+        {
+            username: <username>,
+            signedIn: true
+        }
+
+        The server sends the following response if it was successful with a status code of 200 (OK):
+        {
+            username: <username>,
+            success: true, 
+            counts: {
+                'all': <number of all categories except inactive>,
+                'applied': <number>,
+                'wishlist': <number>,
+                'interview': <number>,
+                'offer': <number>,
+                'rejected': <number>,
+                'inactive': <number>
+
+            }
+        }
+
+        If the request fails, the following is sent alongwith a status code of 400 (Bad Request):
+        {
+            username: <username>,
+            success: false,
+            detail: <detail>
+        }
+    */
+
+    const { username, signedIn } = req.body
+    const user_id = await getUserId(username)
+    
+    const response = {
+        username: username,
+        success: false,
+    }
+
+    if (user_id.length === 0 )
+    {
+        response.detail = `User: ${username} does not exist`
+        res.status(400).json(response)
+    }
+
+    if(signedIn)
+    {
+        response.counts = {}
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true}).then(data => {response.counts.all = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "applied"}).then(data => {response.counts.applied = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "wishlist"}).then(data => {response.counts.wishlist = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "interview"}).then(data => {response.counts.interview = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "offer"}).then(data => {response.counts.offer = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: true, category: "rejected"}).then(data => {response.counts.rejected = data[0].count })
+        await database('job').count("*").where({'user_id': user_id[0].id, active: false}).then(data => {response.counts.inactive = data[0].count })
+        res.status(200).json(response)
+
+        
+    }
+    else
+    {
+        response.detail = 'You are not signed in'
+        res.status(400).json(response)
+    }
+})
 app.listen(3000, () => {
     console.log("App is running! ")
 })
