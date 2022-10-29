@@ -48,7 +48,6 @@ const getCurrentDate = () => {
     return `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
 }
 
-
 // Endpoints
 app.get("/", (req,res) =>{
     
