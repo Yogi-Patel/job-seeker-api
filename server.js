@@ -6,15 +6,15 @@ const bcrypt = require('bcrypt');
 const { json } = require("body-parser");
 
 //database connection for heroku
-const database = knex({
+/* const database = knex({
     client: 'pg',
     connection: {
       connectionString: process.env.DATABASE_URL,
       ssl: true
     }
-});
-
-/* const database = knex({
+}); */
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0; 
+const database = knex({
     client: 'pg',
     connection: {
       host : '127.0.0.1',
@@ -24,7 +24,7 @@ const database = knex({
       database : 'job_seeker'
     }
   });
-   */
+  
 
 /* Above are the import statements for the application/server */
 
@@ -668,6 +668,6 @@ app.post("/stats", async (req, res) => {
         res.status(400).json(response)
     }
 })
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 3001, () => {
     console.log("App is running! ")
 })
