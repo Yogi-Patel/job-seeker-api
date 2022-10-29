@@ -5,7 +5,16 @@ const knex = require('knex');
 const bcrypt = require('bcrypt');
 const { json } = require("body-parser");
 
+//database connection for heroku
 const database = knex({
+    client: 'pg',
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: true
+    }
+});
+
+/* const database = knex({
     client: 'pg',
     connection: {
       host : '127.0.0.1',
@@ -15,7 +24,7 @@ const database = knex({
       database : 'job_seeker'
     }
   });
-  
+   */
 
 /* Above are the import statements for the application/server */
 
